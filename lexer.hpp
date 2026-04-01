@@ -31,7 +31,7 @@ public:
     }
 
 private:
-    int64_t m_value;
+    const int64_t m_value;
 };
 
 class literal_string : public token {

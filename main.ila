@@ -1,3 +1,1 @@
-subroutine main {
-    foo
-}
+1+2+3

@@ -2,6 +2,7 @@
 #include <fstream>
 
 #include "lexer.hpp"
+#include "parser.hpp"
 
 int main() {
 
@@ -15,5 +16,8 @@ int main() {
     for (auto& token : tokens) {
         std::println("{}", token->fmt());
     }
+
+    parser parser(std::move(tokens));
+    auto root = parser.parse();
 
 }
