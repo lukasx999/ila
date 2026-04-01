@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/home/lukas/code/repos/ila/build",
-  "command": "/usr/bin/c++ -std=gnu++23 -fdiagnostics-color=always -fsanitize=address,undefined -ggdb -o CMakeFiles/ila.dir/main.cpp.o -c /home/lukas/code/repos/ila/main.cpp",
-  "file": "/home/lukas/code/repos/ila/main.cpp",
-  "output": "/home/lukas/code/repos/ila/build/CMakeFiles/ila.dir/main.cpp.o"
-}
-]

@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/lukas/code/repos/ila/build/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
