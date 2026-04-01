@@ -1,1 +1,3 @@
-12345foo"hello"
+subroutine main {
+    foo
+}

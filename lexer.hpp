@@ -82,6 +82,36 @@ public:
 
 };
 
+class punct_lbrace : public token {
+public:
+    punct_lbrace() = default;
+
+    [[nodiscard]] std::string fmt() const override {
+        return "lbrace";
+    }
+
+};
+
+class punct_rbrace : public token {
+public:
+    punct_rbrace() = default;
+
+    [[nodiscard]] std::string fmt() const override {
+        return "rbrace";
+    }
+
+};
+
+class keyword_function : public token {
+public:
+    keyword_function() = default;
+
+    [[nodiscard]] std::string fmt() const override {
+        return "function";
+    }
+
+};
+
 class lexer {
 public:
     explicit lexer(std::string_view src)
@@ -101,6 +131,8 @@ public:
             std::bind(&lexer::try_parse_char_novalue, _1, ' '),
             std::bind(&lexer::try_parse_char<operator_plus>, _1, '+'),
             std::bind(&lexer::try_parse_char<operator_minus>, _1, '-'),
+            std::bind(&lexer::try_parse_char<punct_lbrace>, _1, '{'),
+            std::bind(&lexer::try_parse_char<punct_rbrace>, _1, '}'),
             &lexer::try_parse_string,
             &lexer::try_parse_integer,
             &lexer::try_parse_identifier,
@@ -151,7 +183,13 @@ private:
             }
 
             auto value = m_src.substr(old_idx, m_idx - old_idx);
-            m_tokens.push_back(std::make_unique<identifier>(value));
+
+            if (value == "subroutine") {
+                m_tokens.push_back(std::make_unique<keyword_function>());
+            } else {
+                m_tokens.push_back(std::make_unique<identifier>(value));
+            }
+
             return true;
         }
         return false;
