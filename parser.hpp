@@ -4,94 +4,49 @@
 #include <span>
 
 #include "lexer.hpp"
-
-class ast_node {
-public:
-    ast_node() = default;
-    virtual ~ast_node() = default;
-
-    [[nodiscard]] virtual std::string format() const = 0;
-};
-
-class literal : public ast_node {
-public:
-    explicit literal(token token)
-    : m_token(std::move(token))
-    { }
-
-    [[nodiscard]] std::string format() const override {
-        return std::format("literal: {}", std::visit(token_formatter{}, m_token));
-    }
-
-private:
-    token m_token;
-
-};
-
-class binary_operation : public ast_node {
-public:
-    enum class type {
-        plus,
-        minus,
-    };
-
-    binary_operation(type type, std::unique_ptr<ast_node> lhs, std::unique_ptr<ast_node> rhs)
-        : m_type(type)
-        , m_lhs(std::move(lhs))
-        , m_rhs(std::move(rhs))
-    { }
-
-    [[nodiscard]] std::string format() const override {
-        return "binop";
-    }
-
-private:
-    const type m_type;
-    std::unique_ptr<ast_node> m_lhs;
-    std::unique_ptr<ast_node> m_rhs;
-
-};
+#include "utils.hpp"
+#include "ast.hpp"
 
 class parser {
 public:
-    explicit parser(std::span<token> tokens)
+    explicit parser(std::span<token::token> tokens)
     : m_tokens(tokens)
     { }
 
-    [[nodiscard]] std::unique_ptr<ast_node> parse() {
+    [[nodiscard]] std::unique_ptr<ast::node> parse() {
         auto node = parse_binop();
         m_idx = 0;
         return node;
     }
 
 private:
-    const std::span<token> m_tokens;
+    const std::span<token::token> m_tokens;
     size_t m_idx = 0;
 
-    [[nodiscard]] std::unique_ptr<ast_node> parse_expression() {
+    [[nodiscard]] std::unique_ptr<ast::node> parse_expression() {
         return parse_binop();
     }
 
-    [[nodiscard]] std::unique_ptr<ast_node> parse_binop() {
+    [[nodiscard]] std::unique_ptr<ast::node> parse_binop() {
 
-        std::unique_ptr<ast_node> node = parse_atom();
+        std::unique_ptr<ast::node> node = parse_atom();
 
         while (true) {
 
-            binary_operation::type type;
+            ast::bin_op::type type;
 
             if (m_idx >= m_tokens.size()) break;
 
             auto token = m_tokens[m_idx];
 
             bool should_stop = std::visit(overloaded_lambda {
-                [&](const operator_plus&) {
-                    type = binary_operation::type::plus;
+                [&](const token::plus&) {
+                    type = ast::bin_op::type::plus;
                     return false;
                 },
 
-                [&](const operator_minus&) {
-                    type = binary_operation::type::minus;
+                [&](const token::minus&) {
+                    type = ast::bin_op::type::minus;
                     return false;
                 },
 
@@ -103,14 +58,14 @@ private:
             if (should_stop) break;
 
             next_token();
-            node = std::make_unique<binary_operation>(type, std::move(node), parse_atom());
+            node = std::make_unique<ast::bin_op>(type, std::move(node), parse_atom());
         }
 
         return node;
     }
 
-    [[nodiscard]] std::unique_ptr<ast_node> parse_atom() {
-        auto node = std::make_unique<literal>(m_tokens[m_idx]);
+    [[nodiscard]] std::unique_ptr<ast::node> parse_atom() {
+        auto node = std::make_unique<ast::literal>(m_tokens[m_idx]);
         next_token();
         return node;
     }

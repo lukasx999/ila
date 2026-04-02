@@ -12,73 +12,7 @@
 #include <array>
 #include <memory>
 
-struct literal_integer {
-    const int64_t m_value;
-};
-
-struct literal_string {
-    const std::string_view m_value;
-};
-
-struct identifier {
-    const std::string_view m_value;
-};
-
-struct operator_plus { };
-struct operator_minus { };
-struct punct_lbrace { };
-struct punct_rbrace { };
-struct keyword_function { };
-
-using token = std::variant<
-    literal_integer,
-    literal_string,
-    identifier,
-    operator_plus,
-    operator_minus,
-    punct_lbrace,
-    punct_rbrace,
-    keyword_function
->;
-
-struct token_formatter {
-    std::string operator()(const literal_integer& token) const {
-        return std::format("int: {}", token.m_value);
-    }
-
-    std::string operator()(const literal_string& token) const {
-        return std::format("string: {}", token.m_value);
-    }
-
-    std::string operator()(const identifier& token) const {
-        return std::format("ident: {}", token.m_value);
-    }
-
-    std::string operator()(const operator_plus&) const {
-        return "plus";
-    }
-
-    std::string operator()(const operator_minus&) const {
-        return "minus";
-    }
-
-    std::string operator()(const punct_lbrace&) const {
-        return "lbrace";
-    }
-
-    std::string operator()(const punct_rbrace&) const {
-        return "rbrace";
-    }
-
-    std::string operator()(const keyword_function&) const {
-        return "function";
-    }
-};
-
-template <typename... Ts>
-struct overloaded_lambda : Ts... {
-    using Ts::operator()...;
-};
+#include "token.hpp"
 
 class lexer {
 public:
@@ -86,7 +20,7 @@ public:
     : m_src(src)
     { }
 
-    [[nodiscard]] std::vector<token> tokenize() {
+    [[nodiscard]] std::vector<token::token> tokenize() {
 
         using namespace std::placeholders;
 
@@ -97,10 +31,10 @@ public:
         auto parse_functions = std::to_array<std::function<parse_fn>>({
             std::bind(&lexer::try_parse_char_novalue, _1, '\n'),
             std::bind(&lexer::try_parse_char_novalue, _1, ' '),
-            std::bind(&lexer::try_parse_char<operator_plus>, _1, '+'),
-            std::bind(&lexer::try_parse_char<operator_minus>, _1, '-'),
-            std::bind(&lexer::try_parse_char<punct_lbrace>, _1, '{'),
-            std::bind(&lexer::try_parse_char<punct_rbrace>, _1, '}'),
+            std::bind(&lexer::try_parse_char<token::plus>, _1, '+'),
+            std::bind(&lexer::try_parse_char<token::minus>, _1, '-'),
+            std::bind(&lexer::try_parse_char<token::lbrace>, _1, '{'),
+            std::bind(&lexer::try_parse_char<token::rbrace>, _1, '}'),
             &lexer::try_parse_string,
             &lexer::try_parse_integer,
             &lexer::try_parse_identifier,
@@ -126,7 +60,7 @@ public:
 
 private:
     const std::string_view m_src;
-    std::vector<token> m_tokens;
+    std::vector<token::token> m_tokens;
     size_t m_idx = 0;
 
     [[nodiscard]] char get_current() const {
@@ -153,9 +87,9 @@ private:
             auto value = m_src.substr(old_idx, m_idx - old_idx);
 
             if (value == "subroutine") {
-                m_tokens.push_back(keyword_function{});
+                m_tokens.push_back(token::function());
             } else {
-                m_tokens.push_back(identifier{value});
+                m_tokens.push_back(token::identifier(std::string(value)));
             }
 
             return true;
@@ -172,7 +106,7 @@ private:
     template <typename Token>
     bool try_parse_char(char c) {
         if (get_current() != c) return false;
-        m_tokens.push_back(Token{});
+        m_tokens.push_back(Token());
         m_idx++;
         return true;
     }
@@ -192,7 +126,7 @@ private:
         m_idx++;
 
         auto value = m_src.substr(old_idx, m_idx);
-        m_tokens.push_back(literal_string{value});
+        m_tokens.push_back(token::string(std::string(value)));
         return true;
     }
 
@@ -207,7 +141,7 @@ private:
 
             int64_t value = 0;
             std::from_chars(m_src.data() + old_idx, m_src.data() + m_idx, value);
-            m_tokens.push_back(literal_integer{value});
+            m_tokens.push_back(token::integer(value));
 
             return true;
         }

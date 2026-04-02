@@ -8,5 +8,5 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 project(Ila)
 
 add_executable(ila main.cpp)
-target_compile_options(ila PRIVATE -fsanitize=address,undefined -ggdb)
+target_compile_options(ila PRIVATE -fsanitize=address,undefined -ggdb -Wall -Wextra -pedantic)
 target_link_options(ila PRIVATE -fsanitize=address,undefined)
