@@ -5,13 +5,15 @@
 namespace ast {
 
 class literal;
-class bin_op;
+class binary_op;
+class var_decl;
 
 struct node_visitor {
     virtual ~node_visitor() = default;
 
     virtual void visit_literal(literal&) = 0;
-    virtual void visit_binary_operation(bin_op&) = 0;
+    virtual void visit_binary_op(binary_op&) = 0;
+    virtual void visit_var_decl(var_decl&) = 0;
 };
 
 class node {
@@ -41,21 +43,21 @@ private:
 
 };
 
-class bin_op : public node {
+class binary_op : public node {
 public:
     enum class type {
         plus,
         minus,
     };
 
-    bin_op(type type, std::unique_ptr<node> lhs, std::unique_ptr<node> rhs)
+    binary_op(type type, std::unique_ptr<node> lhs, std::unique_ptr<node> rhs)
         : m_type(type)
         , m_lhs(std::move(lhs))
         , m_rhs(std::move(rhs))
     { }
 
     void apply_visitor(node_visitor& visitor) override {
-        visitor.visit_binary_operation(*this);
+        visitor.visit_binary_op(*this);
     }
 
     [[nodiscard]] node& get_lhs() {
@@ -77,6 +79,26 @@ private:
 
 };
 
+class var_decl : public node {
+public:
+    explicit var_decl(token::identifier ident)
+    : m_ident(ident)
+    { }
+
+    void apply_visitor(node_visitor& visitor) override {
+        visitor.visit_var_decl(*this);
+    }
+
+    [[nodiscard]] node& get_init() const {
+        return *m_init;
+    }
+
+private:
+    token::identifier m_ident;
+    std::unique_ptr<node> m_init;
+
+};
+
 class printer : public node_visitor {
 public:
     printer() = default;
@@ -86,7 +108,7 @@ public:
         std::println("lit: {}", std::visit(token::formatter{}, lit.get_token()));
     }
 
-    void visit_binary_operation(bin_op& binop) override {
+    void visit_binary_op(binary_op& binop) override {
         print_spacing();
         std::println("binop");
 
@@ -97,6 +119,12 @@ public:
 
         m_spacing = old_spacing + 1;
         binop.get_rhs().apply_visitor(*this);
+    }
+
+    void visit_var_decl(var_decl& decl) override {
+        print_spacing();
+        std::println("vardecl");
+        decl.get_init().apply_visitor(*this);
     }
 
 private:

@@ -50,10 +50,10 @@ int main() {
     ast::printer ast_printer;
     root->apply_visitor(ast_printer);
 
-    // engine engine;
-    // root->apply_visitor(engine);
+    engine engine;
+    root->apply_visitor(engine);
 
-    // auto value = engine.get_value();
-    // std::println("value: {}", value);
+    auto value = engine.get_value();
+    std::println("value: {}", value.format());
 
 }

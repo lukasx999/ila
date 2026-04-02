@@ -33,41 +33,51 @@ private:
 
         while (true) {
 
-            ast::bin_op::type type;
+            ast::binary_op::type type;
 
             if (m_idx >= m_tokens.size()) break;
 
-            auto token = m_tokens[m_idx];
-
             bool should_stop = std::visit(overloaded_lambda {
                 [&](const token::plus&) {
-                    type = ast::bin_op::type::plus;
+                    type = ast::binary_op::type::plus;
                     return false;
                 },
 
                 [&](const token::minus&) {
-                    type = ast::bin_op::type::minus;
+                    type = ast::binary_op::type::minus;
                     return false;
                 },
 
                 [](const auto&) {
                     return true;
                 },
-            }, token);
+            }, get_token());
 
             if (should_stop) break;
 
             next_token();
-            node = std::make_unique<ast::bin_op>(type, std::move(node), parse_atom());
+            node = std::make_unique<ast::binary_op>(type, std::move(node), parse_atom());
         }
 
         return node;
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_atom() {
-        auto node = std::make_unique<ast::literal>(m_tokens[m_idx]);
+        auto node = std::make_unique<ast::literal>(get_token());
         next_token();
         return node;
+    }
+
+    [[nodiscard]] std::unique_ptr<ast::node> parse_var_decl() {
+        if (!std::holds_alternative<token::let>(get_token()))
+            throw std::runtime_error("expected let");
+
+        next_token();
+        // TODO:
+    }
+
+    [[nodiscard]] token::token& get_token() const {
+        return m_tokens[m_idx];
     }
 
     void next_token() {

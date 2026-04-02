@@ -35,6 +35,7 @@ public:
             std::bind(&lexer::try_parse_char<token::minus>, _1, '-'),
             std::bind(&lexer::try_parse_char<token::lbrace>, _1, '{'),
             std::bind(&lexer::try_parse_char<token::rbrace>, _1, '}'),
+            std::bind(&lexer::try_parse_char<token::eq>, _1, '='),
             &lexer::try_parse_string,
             &lexer::try_parse_integer,
             &lexer::try_parse_identifier,
@@ -86,8 +87,12 @@ private:
 
             auto value = m_src.substr(old_idx, m_idx - old_idx);
 
-            if (value == "subroutine") {
-                m_tokens.push_back(token::function());
+            if (value == "fn") {
+                m_tokens.push_back(token::fn());
+
+            } else if (value == "let") {
+                m_tokens.push_back(token::let());
+
             } else {
                 m_tokens.push_back(token::identifier(std::string(value)));
             }

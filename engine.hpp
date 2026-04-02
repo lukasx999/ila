@@ -15,7 +15,7 @@ public:
         m_values.push_back(value);
     }
 
-    void visit_binary_operation(ast::bin_op& binop) override {
+    void visit_binary_op(ast::binary_op& binop) override {
         binop.get_lhs().apply_visitor(*this);
         binop.get_rhs().apply_visitor(*this);
 
@@ -25,7 +25,7 @@ public:
         auto rhs = m_values.back();
         m_values.pop_back();
 
-        // m_values.push_back(lhs + rhs);
+        m_values.push_back(lhs + rhs);
     }
 
     [[nodiscard]] value::value get_value() const {

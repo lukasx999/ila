@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "lexer.hpp"
+#include "utils.hpp"
 
 namespace value {
 
@@ -95,6 +96,21 @@ public:
 
     value operator+(const value& other) const {
         return integer(get_as<integer>() + other.get_as<integer>());
+    }
+
+    value operator-(const value& other) const {
+        return integer(get_as<integer>() + other.get_as<integer>());
+    }
+
+    [[nodiscard]] std::string format() const {
+        return std::visit(overloaded_lambda {
+            [](const integer& integer) {
+                return std::format("int({})", integer.get());
+            },
+            [](const string& string) {
+                return std::format("string(\"{}\")", string.get());
+            },
+        }, m_variant);
     }
 
 private:

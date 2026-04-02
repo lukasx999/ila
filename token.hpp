@@ -24,7 +24,9 @@ struct plus { };
 struct minus { };
 struct lbrace { };
 struct rbrace { };
-struct function { };
+struct eq { };
+struct fn { };
+struct let { };
 
 using token = std::variant<
 integer,
@@ -34,7 +36,9 @@ plus,
 minus,
 lbrace,
 rbrace,
-function
+eq,
+fn,
+let
 >;
 
 struct formatter {
@@ -66,8 +70,16 @@ struct formatter {
         return "rbrace";
     }
 
-    std::string operator()(const function&) const {
-        return "function";
+    std::string operator()(const eq&) const {
+        return "equals";
+    }
+
+    std::string operator()(const fn&) const {
+        return "fn";
+    }
+
+    std::string operator()(const let&) const {
+        return "let";
     }
 };
 
@@ -76,12 +88,3 @@ struct formatter {
 }
 
 } // namespace token
-
-// TODO: this?
-// template <>
-// struct std::formatter<token::integer> : std::formatter<std::string> {
-//     auto format(const token::integer& integer, std::format_context& ctx) const {
-//         auto fmt =  std::format("int({})", integer.m_value);
-//         return std::formatter<std::string>::format(fmt, ctx);
-//     }
-// };
