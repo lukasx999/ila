@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <variant>
+#include <print>
 #include <functional>
 #include <type_traits>
 #include <iostream>
@@ -10,106 +12,72 @@
 #include <array>
 #include <memory>
 
-class token {
-public:
-    token() = default;
-    virtual ~token() = default;
-
-    [[nodiscard]] virtual std::string fmt() const = 0;
-
-private:
-};
-
-class literal_integer : public token {
-public:
-    explicit literal_integer(int64_t value)
-    : m_value(value)
-    { }
-
-    [[nodiscard]] std::string fmt() const override {
-        return std::format("int: {}", m_value);
-    }
-
-private:
+struct literal_integer {
     const int64_t m_value;
 };
 
-class literal_string : public token {
-public:
-    explicit literal_string(std::string_view value)
-    : m_value(value)
-    { }
-
-    [[nodiscard]] std::string fmt() const override {
-        return std::format("string: {}", m_value);
-    }
-
-private:
-    std::string_view m_value;
+struct literal_string {
+    const std::string_view m_value;
 };
 
-class identifier : public token {
-public:
-    explicit identifier(std::string_view value)
-    : m_value(value)
-    { }
-
-    [[nodiscard]] std::string fmt() const override {
-        return std::format("ident: {}", m_value);
-    }
-
-private:
-    std::string_view m_value;
+struct identifier {
+    const std::string_view m_value;
 };
 
-class operator_plus : public token {
-public:
-    operator_plus() = default;
+struct operator_plus { };
+struct operator_minus { };
+struct punct_lbrace { };
+struct punct_rbrace { };
+struct keyword_function { };
 
-    [[nodiscard]] std::string fmt() const override {
+using token = std::variant<
+    literal_integer,
+    literal_string,
+    identifier,
+    operator_plus,
+    operator_minus,
+    punct_lbrace,
+    punct_rbrace,
+    keyword_function
+>;
+
+struct token_formatter {
+    std::string operator()(const literal_integer& token) const {
+        return std::format("int: {}", token.m_value);
+    }
+
+    std::string operator()(const literal_string& token) const {
+        return std::format("string: {}", token.m_value);
+    }
+
+    std::string operator()(const identifier& token) const {
+        return std::format("ident: {}", token.m_value);
+    }
+
+    std::string operator()(const operator_plus&) const {
         return "plus";
     }
 
-};
-
-class operator_minus : public token {
-public:
-    operator_minus() = default;
-
-    [[nodiscard]] std::string fmt() const override {
+    std::string operator()(const operator_minus&) const {
         return "minus";
     }
 
-};
-
-class punct_lbrace : public token {
-public:
-    punct_lbrace() = default;
-
-    [[nodiscard]] std::string fmt() const override {
+    std::string operator()(const punct_lbrace&) const {
         return "lbrace";
     }
 
-};
-
-class punct_rbrace : public token {
-public:
-    punct_rbrace() = default;
-
-    [[nodiscard]] std::string fmt() const override {
+    std::string operator()(const punct_rbrace&) const {
         return "rbrace";
     }
 
-};
-
-class keyword_function : public token {
-public:
-    keyword_function() = default;
-
-    [[nodiscard]] std::string fmt() const override {
+    std::string operator()(const keyword_function&) const {
         return "function";
     }
+};
 
+template <typename... Ts>
+struct overloaded_lambda : Ts... {
+    using Ts::operator()...;
 };
 
 class lexer {
@@ -118,7 +86,7 @@ public:
     : m_src(src)
     { }
 
-    [[nodiscard]] std::vector<std::unique_ptr<token>> tokenize() {
+    [[nodiscard]] std::vector<token> tokenize() {
 
         using namespace std::placeholders;
 
@@ -153,12 +121,12 @@ public:
         }
 
         m_idx = 0;
-        return std::move(m_tokens);
+        return m_tokens;
     }
 
 private:
-    std::string_view m_src;
-    std::vector<std::unique_ptr<token>> m_tokens;
+    const std::string_view m_src;
+    std::vector<token> m_tokens;
     size_t m_idx = 0;
 
     [[nodiscard]] char get_current() const {
@@ -185,9 +153,9 @@ private:
             auto value = m_src.substr(old_idx, m_idx - old_idx);
 
             if (value == "subroutine") {
-                m_tokens.push_back(std::make_unique<keyword_function>());
+                m_tokens.push_back(keyword_function{});
             } else {
-                m_tokens.push_back(std::make_unique<identifier>(value));
+                m_tokens.push_back(identifier{value});
             }
 
             return true;
@@ -201,10 +169,10 @@ private:
         return true;
     }
 
-    template <typename Token> requires std::is_base_of_v<token, Token>
+    template <typename Token>
     bool try_parse_char(char c) {
         if (get_current() != c) return false;
-        m_tokens.push_back(std::make_unique<Token>());
+        m_tokens.push_back(Token{});
         m_idx++;
         return true;
     }
@@ -224,7 +192,7 @@ private:
         m_idx++;
 
         auto value = m_src.substr(old_idx, m_idx);
-        m_tokens.push_back(std::make_unique<literal_string>(value));
+        m_tokens.push_back(literal_string{value});
         return true;
     }
 
@@ -239,7 +207,7 @@ private:
 
             int64_t value = 0;
             std::from_chars(m_src.data() + old_idx, m_src.data() + m_idx, value);
-            m_tokens.push_back(std::make_unique<literal_integer>(value));
+            m_tokens.push_back(literal_integer{value});
 
             return true;
         }
@@ -248,4 +216,3 @@ private:
     }
 
 };
-

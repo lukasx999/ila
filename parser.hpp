@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <span>
 
 #include "lexer.hpp"
 
@@ -12,12 +13,12 @@ public:
 
 class literal : public ast_node {
 public:
-    explicit literal(std::unique_ptr<token> token)
+    explicit literal(token token)
     : m_token(std::move(token))
     { }
 
 private:
-    std::unique_ptr<token> m_token;
+    token m_token;
 
 };
 
@@ -43,8 +44,8 @@ private:
 
 class parser {
 public:
-    explicit parser(std::vector<std::unique_ptr<token>> tokens)
-    : m_tokens(std::move(tokens))
+    explicit parser(std::span<token> tokens)
+    : m_tokens(tokens)
     { }
 
     [[nodiscard]] std::unique_ptr<ast_node> parse() {
@@ -54,7 +55,7 @@ public:
     }
 
 private:
-    std::vector<std::unique_ptr<token>> m_tokens;
+    std::span<token> m_tokens;
     size_t m_idx = 0;
 
     [[nodiscard]] std::unique_ptr<ast_node> parse_expression() {
@@ -71,15 +72,25 @@ private:
 
             if (m_idx >= m_tokens.size()) break;
 
-            if (dynamic_cast<operator_plus*>(m_tokens.at(m_idx).get()) != nullptr) {
-                type = binary_operation::type::plus;
+            auto token = m_tokens[m_idx];
 
-            } else if (dynamic_cast<operator_minus*>(m_tokens.at(m_idx).get()) != nullptr) {
-                type = binary_operation::type::minus;
+            bool should_stop = std::visit(overloaded_lambda {
+                [&](const operator_plus& token) {
+                    type = binary_operation::type::plus;
+                    return false;
+                },
 
-            } else {
-                break;
-            }
+                [&](const operator_minus& token) {
+                    type = binary_operation::type::minus;
+                    return false;
+                },
+
+                [](const auto&) {
+                    return true;
+                },
+            }, token);
+
+            if (should_stop) break;
 
             next_token();
 
@@ -90,7 +101,7 @@ private:
     }
 
     [[nodiscard]] std::unique_ptr<ast_node> parse_atom() {
-        auto node = std::make_unique<literal>(std::move(m_tokens[m_idx]));
+        auto node = std::make_unique<literal>(m_tokens[m_idx]);
         next_token();
         return node;
     }

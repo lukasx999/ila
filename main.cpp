@@ -14,10 +14,11 @@ int main() {
     auto tokens = lexer.tokenize();
 
     for (auto& token : tokens) {
-        std::println("{}", token->fmt());
+        auto str = std::visit(token_formatter{}, token);
+        std::println("* {}", str);
     }
 
-    parser parser(std::move(tokens));
+    parser parser(tokens);
     auto root = parser.parse();
 
 }
