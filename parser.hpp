@@ -9,6 +9,8 @@ class ast_node {
 public:
     ast_node() = default;
     virtual ~ast_node() = default;
+
+    [[nodiscard]] virtual std::string format() const = 0;
 };
 
 class literal : public ast_node {
@@ -16,6 +18,10 @@ public:
     explicit literal(token token)
     : m_token(std::move(token))
     { }
+
+    [[nodiscard]] std::string format() const override {
+        return std::format("literal: {}", std::visit(token_formatter{}, m_token));
+    }
 
 private:
     token m_token;
@@ -34,6 +40,10 @@ public:
         , m_lhs(std::move(lhs))
         , m_rhs(std::move(rhs))
     { }
+
+    [[nodiscard]] std::string format() const override {
+        return "binop";
+    }
 
 private:
     const type m_type;
@@ -55,7 +65,7 @@ public:
     }
 
 private:
-    std::span<token> m_tokens;
+    const std::span<token> m_tokens;
     size_t m_idx = 0;
 
     [[nodiscard]] std::unique_ptr<ast_node> parse_expression() {
@@ -75,12 +85,12 @@ private:
             auto token = m_tokens[m_idx];
 
             bool should_stop = std::visit(overloaded_lambda {
-                [&](const operator_plus& token) {
+                [&](const operator_plus&) {
                     type = binary_operation::type::plus;
                     return false;
                 },
 
-                [&](const operator_minus& token) {
+                [&](const operator_minus&) {
                     type = binary_operation::type::minus;
                     return false;
                 },
@@ -93,7 +103,6 @@ private:
             if (should_stop) break;
 
             next_token();
-
             node = std::make_unique<binary_operation>(type, std::move(node), parse_atom());
         }
 
