@@ -81,8 +81,9 @@ private:
 
 class var_decl : public node {
 public:
-    explicit var_decl(token::identifier ident)
-    : m_ident(ident)
+    explicit var_decl(token::identifier ident, std::unique_ptr<node> init)
+        : m_ident(ident)
+        , m_init(std::move(init))
     { }
 
     void apply_visitor(node_visitor& visitor) override {
@@ -124,6 +125,7 @@ public:
     void visit_var_decl(var_decl& decl) override {
         print_spacing();
         std::println("vardecl");
+        m_spacing++;
         decl.get_init().apply_visitor(*this);
     }
 

@@ -11,6 +11,11 @@
 
 namespace value {
 
+class null {
+public:
+    null() = default;
+};
+
 class integer {
 public:
     integer(int64_t value)
@@ -69,7 +74,7 @@ template <typename Variant, typename T>
 inline constexpr bool variant_contains_type_v = variant_contains_type<Variant, T>::value;
 
 class value {
-    using variant_t = std::variant<integer, string>;
+    using variant_type = std::variant<integer, string, null>;
 
 public:
     value(integer integer)
@@ -80,17 +85,21 @@ public:
     : m_variant(string)
     { }
 
+    value(null null)
+    : m_variant(null)
+    { }
+
     template <typename T>
     [[nodiscard]] T get_as() const {
-        static_assert(variant_contains_type_v<variant_t, T>, "value cannot be of the specified type");
+        static_assert(variant_contains_type_v<variant_type, T>, "value cannot be of the specified type");
 
-        if (!is_a<T>()) throw type_error("value does not contain the specified type");
+        if (!isa<T>()) throw type_error("value does not contain the specified type");
         return std::get<T>(m_variant);
     }
 
     template <typename T>
-    [[nodiscard]] bool is_a() const {
-        static_assert(variant_contains_type_v<variant_t, T>, "value cannot be of the specified type");
+    [[nodiscard]] bool isa() const {
+        static_assert(variant_contains_type_v<variant_type, T>, "value cannot be of the specified type");
         return std::holds_alternative<T>(m_variant);
     }
 
@@ -110,11 +119,14 @@ public:
             [](const string& string) {
                 return std::format("string(\"{}\")", string.get());
             },
+            [](const null&) {
+                return std::string("null");
+            },
         }, m_variant);
     }
 
 private:
-    variant_t m_variant;
+    variant_type m_variant;
 
 };
 

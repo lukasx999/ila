@@ -24,21 +24,21 @@ public:
 
         using namespace std::placeholders;
 
-        // a parse function will attempt to parse a lexeme, and return whether it
+        // a lex function will attempt to parse a lexeme, and return whether it
         // was actually able to parse the lexeme or not.
-        using parse_fn = bool(lexer*);
+        using lex_fn = bool(lexer*);
 
-        auto parse_functions = std::to_array<std::function<parse_fn>>({
-            std::bind(&lexer::try_parse_char_novalue, _1, '\n'),
-            std::bind(&lexer::try_parse_char_novalue, _1, ' '),
-            std::bind(&lexer::try_parse_char<token::plus>, _1, '+'),
-            std::bind(&lexer::try_parse_char<token::minus>, _1, '-'),
-            std::bind(&lexer::try_parse_char<token::lbrace>, _1, '{'),
-            std::bind(&lexer::try_parse_char<token::rbrace>, _1, '}'),
-            std::bind(&lexer::try_parse_char<token::eq>, _1, '='),
-            &lexer::try_parse_string,
-            &lexer::try_parse_integer,
-            &lexer::try_parse_identifier,
+        auto lex_functions = std::to_array<std::function<lex_fn>>({
+            std::bind(&lexer::lex_char_novalue, _1, '\n'),
+            std::bind(&lexer::lex_char_novalue, _1, ' '),
+            std::bind(&lexer::lex_char<token::plus>, _1, '+'),
+            std::bind(&lexer::lex_char<token::minus>, _1, '-'),
+            std::bind(&lexer::lex_char<token::lbrace>, _1, '{'),
+            std::bind(&lexer::lex_char<token::rbrace>, _1, '}'),
+            std::bind(&lexer::lex_char<token::eq>, _1, '='),
+            &lexer::lex_string,
+            &lexer::lex_integer,
+            &lexer::lex_identifier,
         });
 
         while (true) {
@@ -49,7 +49,7 @@ public:
             // be at the end of the src string, resulting in UB if another function reads
             // the char at that index.
 
-            for (auto& fn : parse_functions) {
+            for (auto& fn : lex_functions) {
                 if (fn(this)) break;
             }
 
@@ -76,7 +76,7 @@ private:
         return m_idx >= m_src.size();
     }
 
-    bool try_parse_identifier() {
+    bool lex_identifier() {
 
         if (is_identifier(get_current())) {
 
@@ -102,21 +102,21 @@ private:
         return false;
     }
 
-    bool try_parse_char_novalue(char c) {
+    bool lex_char_novalue(char c) {
         if (get_current() != c) return false;
         m_idx++;
         return true;
     }
 
     template <typename Token>
-    bool try_parse_char(char c) {
+    bool lex_char(char c) {
         if (get_current() != c) return false;
         m_tokens.push_back(Token());
         m_idx++;
         return true;
     }
 
-    bool try_parse_string() {
+    bool lex_string() {
         if (get_current() != '"') return false;
 
         size_t old_idx = m_idx;
@@ -135,7 +135,7 @@ private:
         return true;
     }
 
-    bool try_parse_integer() {
+    bool lex_integer() {
 
         if (std::isdigit(get_current())) {
 

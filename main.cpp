@@ -10,7 +10,7 @@ void test_value() {
     value::integer a(4);
     value::integer b(5);
     value::value val_a(a);
-    assert(val_a.is_a<value::integer>());
+    assert(val_a.isa<value::integer>());
     assert(val_a.get_as<value::integer>() == 4);
     assert(value::value(a).get_as<value::integer>() == 4);
 

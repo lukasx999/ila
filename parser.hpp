@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <string>
 #include <span>
 
@@ -14,7 +15,7 @@ public:
     { }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse() {
-        auto node = parse_binop();
+        auto node = parse_script();
         m_idx = 0;
         return node;
     }
@@ -23,13 +24,22 @@ private:
     const std::span<token::token> m_tokens;
     size_t m_idx = 0;
 
+    [[nodiscard]] std::unique_ptr<ast::node> parse_script() {
+        if (token_isa<token::let>()) {
+            return parse_var_decl();
+        }
+
+        return parse_binop();
+
+    }
+
     [[nodiscard]] std::unique_ptr<ast::node> parse_expression() {
         return parse_binop();
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_binop() {
 
-        std::unique_ptr<ast::node> node = parse_atom();
+        std::unique_ptr<ast::node> node = parse_literal();
 
         while (true) {
 
@@ -56,24 +66,47 @@ private:
             if (should_stop) break;
 
             next_token();
-            node = std::make_unique<ast::binary_op>(type, std::move(node), parse_atom());
+            node = std::make_unique<ast::binary_op>(type, std::move(node), parse_literal());
         }
 
         return node;
     }
 
-    [[nodiscard]] std::unique_ptr<ast::node> parse_atom() {
+    [[nodiscard]] std::unique_ptr<ast::node> parse_literal() {
         auto node = std::make_unique<ast::literal>(get_token());
         next_token();
         return node;
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_var_decl() {
-        if (!std::holds_alternative<token::let>(get_token()))
-            throw std::runtime_error("expected let");
-
+        assert_token<token::let>();
         next_token();
-        // TODO:
+
+        assert_token<token::identifier>();
+        auto ident = get_token_as<token::identifier>();
+        next_token();
+
+        assert_token<token::eq>();
+        next_token();
+
+        auto init = parse_expression();
+
+        return std::make_unique<ast::var_decl>(ident, std::move(init));
+    }
+
+    template <typename Token>
+    [[nodiscard]] bool token_isa() const {
+        return std::holds_alternative<Token>(get_token());
+    }
+
+    template <typename Token>
+    void assert_token() const {
+        assert(std::holds_alternative<Token>(get_token()));
+    }
+
+    template <typename Token>
+    [[nodiscard]] Token get_token_as() {
+        return std::get<Token>(get_token());
     }
 
     [[nodiscard]] token::token& get_token() const {

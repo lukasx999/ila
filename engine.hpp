@@ -33,6 +33,9 @@ public:
         return m_values.back();
     }
 
+    void visit_var_decl(ast::var_decl& var_decl) override {
+    }
+
 private:
     std::vector<value::value> m_values;
 
