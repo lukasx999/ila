@@ -6,6 +6,8 @@
 #include <string>
 #include <format>
 
+#include "variant.hpp"
+
 namespace token {
 
 struct integer {
@@ -29,10 +31,9 @@ struct log_and { };
 struct fn { };
 struct let { };
 
-using token = std::variant<integer, string, identifier,
-                           plus, minus, lbrace, rbrace, eq, log_and, fn, let>;
+using token = std::variant<integer, string, identifier, plus, minus, lbrace, rbrace, eq, log_and, fn, let>;
 
-struct formatter {
+struct format_visitor {
     std::string operator()(const integer& token) const {
         return std::format("int({})", token.m_value);
     }
@@ -78,8 +79,8 @@ struct formatter {
     }
 };
 
-[[nodiscard]] inline std::string format(const token& token) {
-    return std::visit(formatter{}, token);
+[[nodiscard]] inline std::string to_string(const token& token) {
+    return std::visit(format_visitor{}, token);
 }
 
 } // namespace token

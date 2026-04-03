@@ -32,9 +32,9 @@ private:
 
             if (token_isa<token::let>()) {
                 children.push_back(parse_var_decl());
+            } else {
+                children.push_back(parse_binop());
             }
-
-            children.push_back(parse_binop());
         }
 
         ast::block block(std::move(children));
@@ -53,7 +53,7 @@ private:
 
             ast::binary_op::type type;
 
-            if (m_idx >= m_tokens.size()) break;
+            if (is_at_end()) break;
 
             bool should_stop = std::visit(overloaded_lambda {
                 [&](const token::plus&) {

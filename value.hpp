@@ -63,24 +63,24 @@ public:
 
 };
 
-using value_t = variant<integer, string, null>;
+using variant_type = std::variant<integer, string, null>;
 
-class value : public value_t {
+class value : public variant_type {
 public:
-    value(integer integer) : value_t(integer) { }
-    value(string string)   : value_t(string)  { }
-    value(null null)       : value_t(null)    { }
+    value(integer integer) : variant_type(integer) { }
+    value(string string)   : variant_type(string)  { }
+    value(null null)       : variant_type(null)    { }
 
     value operator+(const value& other) const {
-        return integer(get_as<integer>() + other.get_as<integer>());
+        return integer(std::get<integer>(*this) + std::get<integer>(other));
     }
 
     value operator-(const value& other) const {
-        return integer(get_as<integer>() + other.get_as<integer>());
+        return integer(std::get<integer>(*this) - std::get<integer>(other));
     }
 
     [[nodiscard]] std::string format() const {
-        return match(
+        return std::visit(overloaded_lambda {
             [](const integer& integer) {
                 return std::format("int({})", integer.get());
             },
@@ -90,7 +90,7 @@ public:
             [](const null&) {
                 return std::string("null");
             }
-        );
+        }, *this);
     }
 
 };

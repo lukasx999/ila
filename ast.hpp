@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <variant>
+#include <vector>
+#include <print>
 
-#include "lexer.hpp"
+#include "token.hpp"
 
 namespace ast {
 
@@ -45,6 +47,14 @@ public:
         return *m_rhs;
     }
 
+    [[nodiscard]] const node& get_lhs() const {
+        return *m_lhs;
+    }
+
+    [[nodiscard]] const node& get_rhs() const {
+        return *m_rhs;
+    }
+
     [[nodiscard]] type get_type() const {
         return m_type;
     }
@@ -79,7 +89,7 @@ public:
     : m_children(std::move(children))
     { }
 
-    [[nodiscard]] std::vector<std::unique_ptr<node>>& get_children() {
+    [[nodiscard]] auto get_children() const -> const std::vector<std::unique_ptr<node>>& {
         return m_children;
     }
 
@@ -93,7 +103,7 @@ struct node : std::variant<literal, binary_op, var_decl, block> { };
 struct node_formatter {
     void operator()(literal& lit) {
         print_spacing();
-        std::println("lit: {}", std::visit(token::formatter{}, lit.get_token()));
+        std::println("lit: {}", token::to_string(lit.get_token()));
     }
 
     void operator()(binary_op& binop) {
