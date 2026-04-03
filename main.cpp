@@ -61,7 +61,7 @@ int main() {
         std::println("* {}", token::format(token));
     }
 
-    parser parser(tokens);
+    parser parser(std::move(tokens));
     auto root = parser.parse();
 
     std::visit(ast::node_formatter(), *root);

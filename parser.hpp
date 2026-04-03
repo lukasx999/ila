@@ -11,7 +11,7 @@
 
 class parser {
 public:
-    explicit parser(std::span<token::token> tokens)
+    explicit parser(std::vector<token::token> tokens)
     : m_tokens(tokens)
     { }
 
@@ -22,7 +22,7 @@ public:
     }
 
 private:
-    const std::span<token::token> m_tokens;
+    const std::vector<token::token> m_tokens;
     size_t m_idx = 0;
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_script() {
@@ -120,8 +120,8 @@ private:
         return std::get<Token>(get_token());
     }
 
-    [[nodiscard]] token::token& get_token() const {
-        return m_tokens[m_idx];
+    [[nodiscard]] const token::token& get_token() const {
+        return m_tokens.at(m_idx);
     }
 
     [[nodiscard]] bool is_at_end() const {
