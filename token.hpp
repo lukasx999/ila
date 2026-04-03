@@ -25,6 +25,7 @@ struct minus { };
 struct lbrace { };
 struct rbrace { };
 struct eq { };
+struct log_and { };
 struct fn { };
 struct let { };
 
@@ -37,6 +38,7 @@ minus,
 lbrace,
 rbrace,
 eq,
+log_and,
 fn,
 let
 >;

@@ -37,6 +37,7 @@ public:
         auto lex_functions = std::to_array<lex_fn>({
             std::bind(&lexer::lex_char_ignore, _1, '\n'),
             std::bind(&lexer::lex_char_ignore, _1, ' '),
+            std::bind(&lexer::lex_char_double<token::log_and>, _1, '&', '&'),
             std::bind(&lexer::lex_char<token::plus>, _1, '+'),
             std::bind(&lexer::lex_char<token::minus>, _1, '-'),
             std::bind(&lexer::lex_char<token::lbrace>, _1, '{'),
@@ -76,6 +77,11 @@ private:
     [[nodiscard]] char get_current() const {
         assert(m_idx < m_src.length());
         return m_src[m_idx];
+    }
+
+    [[nodiscard]] char get_next() const {
+        assert(m_idx + 1 < m_src.length());
+        return m_src[m_idx + 1];
     }
 
     [[nodiscard]] static bool is_identifier(char c) {
@@ -124,6 +130,14 @@ private:
         if (get_current() != c) return false;
         m_tokens.push_back(Token());
         m_idx++;
+        return true;
+    }
+
+    template <typename Token>
+    bool lex_char_double(char c1, char c2) {
+        if (get_current() != c1 && get_next() != c2) return false;
+        m_tokens.push_back(Token());
+        m_idx += 2;
         return true;
     }
 
