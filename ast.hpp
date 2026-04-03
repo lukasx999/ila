@@ -7,6 +7,7 @@ namespace ast {
 class literal;
 class binary_op;
 class var_decl;
+class block;
 
 struct node_visitor {
     virtual ~node_visitor() = default;
@@ -14,6 +15,7 @@ struct node_visitor {
     virtual void visit_literal(literal&) = 0;
     virtual void visit_binary_op(binary_op&) = 0;
     virtual void visit_var_decl(var_decl&) = 0;
+    virtual void visit_block(block&) = 0;
 };
 
 class node {
@@ -100,6 +102,25 @@ private:
 
 };
 
+class block : public node {
+public:
+    explicit block(std::vector<std::unique_ptr<node>> children)
+    : m_children(std::move(children))
+    { }
+
+    void apply_visitor(node_visitor& visitor) override {
+        visitor.visit_block(*this);
+    }
+
+    // [[nodiscard]] std::vector<std::unique_ptr<node>> get_children() const {
+    //     return m_children;
+    // }
+
+private:
+    std::vector<std::unique_ptr<node>> m_children;
+
+};
+
 class node_formatter : public node_visitor {
 public:
     node_formatter() = default;
@@ -127,6 +148,15 @@ public:
         std::println("vardecl");
         m_spacing++;
         decl.get_init().apply_visitor(*this);
+    }
+
+    void visit_block(block& block) override {
+        print_spacing();
+        std::println("vardecl");
+        m_spacing++;
+        // for (auto& child : block.get_children()) {
+        //     child.apply_visitor(*this);
+        // }
     }
 
 private:

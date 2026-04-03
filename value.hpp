@@ -77,17 +77,9 @@ class value {
     using variant_type = std::variant<integer, string, null>;
 
 public:
-    value(integer integer)
-    : m_variant(integer)
-    { }
-
-    value(string string)
-    : m_variant(string)
-    { }
-
-    value(null null)
-    : m_variant(null)
-    { }
+    value(integer integer) : m_variant(integer) { }
+    value(string string)   : m_variant(string)  { }
+    value(null null)       : m_variant(null)    { }
 
     template <typename T>
     [[nodiscard]] T get_as() const {

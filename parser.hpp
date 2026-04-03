@@ -26,12 +26,18 @@ private:
     size_t m_idx = 0;
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_script() {
-        if (token_isa<token::let>()) {
-            return parse_var_decl();
+        std::vector<std::unique_ptr<ast::node>> children;
+
+        while (!is_at_end()) {
+
+            if (token_isa<token::let>()) {
+                children.push_back(parse_var_decl());
+            }
+
+            children.push_back(parse_binop());
         }
 
-        return parse_binop();
-
+        return std::make_unique<ast::block>(std::move(children));
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_expression() {
@@ -112,6 +118,10 @@ private:
 
     [[nodiscard]] token::token& get_token() const {
         return m_tokens[m_idx];
+    }
+
+    [[nodiscard]] bool is_at_end() const {
+        return m_idx >= m_tokens.size();
     }
 
     void next_token() {
