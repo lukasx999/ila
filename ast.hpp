@@ -1,40 +1,19 @@
 #pragma once
 
+#include <memory>
+#include <variant>
+
 #include "lexer.hpp"
 
 namespace ast {
 
-class literal;
-class binary_op;
-class var_decl;
-class block;
+struct node;
 
-struct node_visitor {
-    virtual ~node_visitor() = default;
-
-    virtual void visit_literal(literal&) = 0;
-    virtual void visit_binary_op(binary_op&) = 0;
-    virtual void visit_var_decl(var_decl&) = 0;
-    virtual void visit_block(block&) = 0;
-};
-
-class node {
-public:
-    node() = default;
-    virtual ~node() = default;
-
-    virtual void apply_visitor(node_visitor& visitor) = 0;
-};
-
-class literal : public node {
+class literal {
 public:
     explicit literal(token::token token)
     : m_token(std::move(token))
     { }
-
-    void apply_visitor(node_visitor& visitor) override {
-        visitor.visit_literal(*this);
-    }
 
     [[nodiscard]] const token::token& get_token() const {
         return m_token;
@@ -45,7 +24,7 @@ private:
 
 };
 
-class binary_op : public node {
+class binary_op {
 public:
     enum class type {
         plus,
@@ -57,10 +36,6 @@ public:
         , m_lhs(std::move(lhs))
         , m_rhs(std::move(rhs))
     { }
-
-    void apply_visitor(node_visitor& visitor) override {
-        visitor.visit_binary_op(*this);
-    }
 
     [[nodiscard]] node& get_lhs() {
         return *m_lhs;
@@ -81,16 +56,12 @@ private:
 
 };
 
-class var_decl : public node {
+class var_decl {
 public:
-    explicit var_decl(token::identifier ident, std::unique_ptr<node> init)
+    var_decl(token::identifier ident, std::unique_ptr<node> init)
         : m_ident(ident)
         , m_init(std::move(init))
     { }
-
-    void apply_visitor(node_visitor& visitor) override {
-        visitor.visit_var_decl(*this);
-    }
 
     [[nodiscard]] node& get_init() const {
         return *m_init;
@@ -102,61 +73,56 @@ private:
 
 };
 
-class block : public node {
+class block {
 public:
     explicit block(std::vector<std::unique_ptr<node>> children)
     : m_children(std::move(children))
     { }
 
-    void apply_visitor(node_visitor& visitor) override {
-        visitor.visit_block(*this);
+    [[nodiscard]] std::vector<std::unique_ptr<node>>& get_children() {
+        return m_children;
     }
-
-    // [[nodiscard]] std::vector<std::unique_ptr<node>> get_children() const {
-    //     return m_children;
-    // }
 
 private:
     std::vector<std::unique_ptr<node>> m_children;
 
 };
 
-class node_formatter : public node_visitor {
-public:
-    node_formatter() = default;
+struct node : std::variant<literal, binary_op, var_decl, block> { };
 
-    void visit_literal(literal& lit) override {
+struct node_formatter {
+    void operator()(literal& lit) {
         print_spacing();
         std::println("lit: {}", std::visit(token::formatter{}, lit.get_token()));
     }
 
-    void visit_binary_op(binary_op& binop) override {
+    void operator()(binary_op& binop) {
         print_spacing();
         std::println("binop");
 
         int old_spacing = m_spacing;
 
         m_spacing++;
-        binop.get_lhs().apply_visitor(*this);
+        std::visit(*this, binop.get_lhs());
 
         m_spacing = old_spacing + 1;
-        binop.get_rhs().apply_visitor(*this);
+        std::visit(*this, binop.get_rhs());
     }
 
-    void visit_var_decl(var_decl& decl) override {
+    void operator()(var_decl& decl) {
         print_spacing();
         std::println("vardecl");
         m_spacing++;
-        decl.get_init().apply_visitor(*this);
+        std::visit(*this, decl.get_init());
     }
 
-    void visit_block(block& block) override {
+    void operator()(block& block) {
         print_spacing();
-        std::println("vardecl");
+        std::println("block");
         m_spacing++;
-        // for (auto& child : block.get_children()) {
-        //     child.apply_visitor(*this);
-        // }
+        for (auto& child : block.get_children()) {
+            std::visit(*this, *child);
+        }
     }
 
 private:

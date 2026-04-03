@@ -63,7 +63,7 @@ int main() {
 
     parser parser(tokens);
     auto root = parser.parse();
-    ast::node_formatter ast_printer;
-    root->apply_visitor(ast_printer);
+
+    std::visit(ast::node_formatter(), *root);
 
 }

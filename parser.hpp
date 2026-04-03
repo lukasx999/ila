@@ -37,7 +37,8 @@ private:
             children.push_back(parse_binop());
         }
 
-        return std::make_unique<ast::block>(std::move(children));
+        ast::block block(std::move(children));
+        return std::make_unique<ast::node>(std::move(block));
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_expression() {
@@ -73,32 +74,35 @@ private:
             if (should_stop) break;
 
             next_token();
-            node = std::make_unique<ast::binary_op>(type, std::move(node), parse_literal());
+            ast::binary_op binop(type, std::move(node), parse_literal());
+            node = std::make_unique<ast::node>(std::move(binop));
         }
 
         return node;
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_literal() {
-        auto node = std::make_unique<ast::literal>(get_token());
+        ast::literal lit(get_token());
+        auto node = std::make_unique<ast::node>(lit);
         next_token();
         return node;
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_var_decl() {
-        assert_token<token::let>();
+        token_must_be<token::let>();
         next_token();
 
-        assert_token<token::identifier>();
+        token_must_be<token::identifier>();
         auto ident = get_token_as<token::identifier>();
         next_token();
 
-        assert_token<token::eq>();
+        token_must_be<token::eq>();
         next_token();
 
         auto init = parse_expression();
 
-        return std::make_unique<ast::var_decl>(ident, std::move(init));
+        ast::var_decl vardecl(ident, std::move(init));
+        return std::make_unique<ast::node>(std::move(vardecl));
     }
 
     template <typename Token>
@@ -107,7 +111,7 @@ private:
     }
 
     template <typename Token>
-    void assert_token() const {
+    void token_must_be() const {
         assert(std::holds_alternative<Token>(get_token()));
     }
 
