@@ -3,6 +3,7 @@
 #include <cassert>
 #include <string>
 #include <span>
+#include <memory>
 
 #include "lexer.hpp"
 #include "utils.hpp"

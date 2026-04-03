@@ -100,9 +100,9 @@ private:
 
 };
 
-class printer : public node_visitor {
+class node_formatter : public node_visitor {
 public:
-    printer() = default;
+    node_formatter() = default;
 
     void visit_literal(literal& lit) override {
         print_spacing();

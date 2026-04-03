@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cassert>
+#include <fstream>
+#include <filesystem>
 #include <string>
-#include <variant>
 #include <print>
 #include <functional>
 #include <type_traits>
@@ -10,27 +12,31 @@
 #include <format>
 #include <string_view>
 #include <array>
-#include <memory>
 
 #include "token.hpp"
 
 class lexer {
 public:
-    explicit lexer(std::string_view src)
-    : m_src(src)
+    explicit lexer(std::string src)
+    : m_src(std::move(src))
     { }
 
-    [[nodiscard]] std::vector<token::token> tokenize() {
+    [[nodiscard]] static lexer from_file(const std::filesystem::path& path) {
+        std::ifstream file(path);
+        return lexer({std::istreambuf_iterator(file), {}});
+    }
+
+    [[nodiscard]] auto tokenize() -> std::vector<token::token> {
 
         using namespace std::placeholders;
 
         // a lex function will attempt to parse a lexeme, and return whether it
         // was actually able to parse the lexeme or not.
-        using lex_fn = bool(lexer*);
+        using lex_fn = std::function<bool(lexer*)>;
 
-        auto lex_functions = std::to_array<std::function<lex_fn>>({
-            std::bind(&lexer::lex_char_novalue, _1, '\n'),
-            std::bind(&lexer::lex_char_novalue, _1, ' '),
+        auto lex_functions = std::to_array<lex_fn>({
+            std::bind(&lexer::lex_char_ignore, _1, '\n'),
+            std::bind(&lexer::lex_char_ignore, _1, ' '),
             std::bind(&lexer::lex_char<token::plus>, _1, '+'),
             std::bind(&lexer::lex_char<token::minus>, _1, '-'),
             std::bind(&lexer::lex_char<token::lbrace>, _1, '{'),
@@ -56,15 +62,19 @@ public:
         }
 
         m_idx = 0;
-        return m_tokens;
+        auto tokens = m_tokens;
+        m_tokens.clear();
+
+        return tokens;
     }
 
 private:
-    const std::string_view m_src;
+    const std::string m_src;
     std::vector<token::token> m_tokens;
     size_t m_idx = 0;
 
     [[nodiscard]] char get_current() const {
+        assert(m_idx < m_src.length());
         return m_src[m_idx];
     }
 
@@ -81,8 +91,9 @@ private:
         if (is_identifier(get_current())) {
 
             size_t old_idx = m_idx;
-            while ((is_identifier(get_current()) || std::isdigit(get_current())) && !is_at_end()) {
+            while ((is_identifier(get_current()) || std::isdigit(get_current()))) {
                 m_idx++;
+                if (is_at_end()) break;
             }
 
             auto value = m_src.substr(old_idx, m_idx - old_idx);
@@ -102,7 +113,7 @@ private:
         return false;
     }
 
-    bool lex_char_novalue(char c) {
+    bool lex_char_ignore(char c) {
         if (get_current() != c) return false;
         m_idx++;
         return true;
@@ -140,8 +151,9 @@ private:
         if (std::isdigit(get_current())) {
 
             size_t old_idx = m_idx;
-            while (std::isdigit(get_current()) && !is_at_end()) {
+            while (std::isdigit(get_current())) {
                 m_idx++;
+                if (is_at_end()) break;
             }
 
             int64_t value = 0;

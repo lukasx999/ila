@@ -3,7 +3,6 @@
 
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "engine.hpp"
 #include "value.hpp"
 
 void test_value() {
@@ -28,18 +27,35 @@ void test_value() {
     c = d;
     assert(c.get_as<value::string>().get() == "foo");
 
+    value::value val_int(45);
+
+    assert(val_int.match(
+        [](const value::integer&) {
+            return true;
+        },
+        [](const auto&) {
+            return false;
+        }
+    ));
+
+}
+
+void test_lexer() {
+    lexer lexer("let x = 1");
+    auto tokens = lexer.tokenize();
+    assert(tokens.size() == 4);
+    assert(std::holds_alternative<token::let>(tokens.at(0)));
+    assert(std::holds_alternative<token::identifier>(tokens.at(1)));
+    assert(std::holds_alternative<token::eq>(tokens.at(2)));
+    assert(std::holds_alternative<token::integer>(tokens.at(3)));
 }
 
 int main() {
 
     test_value();
+    test_lexer();
 
-    std::ifstream file("main.ila");
-    std::istreambuf_iterator<char> it(file);
-    std::string src(it, {});
-
-    lexer lexer(src);
-    auto tokens = lexer.tokenize();
+    auto tokens = lexer::from_file("main.ila").tokenize();
 
     for (auto& token : tokens) {
         std::println("* {}", token::format(token));
@@ -47,13 +63,7 @@ int main() {
 
     parser parser(tokens);
     auto root = parser.parse();
-    ast::printer ast_printer;
+    ast::node_formatter ast_printer;
     root->apply_visitor(ast_printer);
-
-    engine engine;
-    root->apply_visitor(engine);
-
-    auto value = engine.get_value();
-    std::println("value: {}", value.format());
 
 }

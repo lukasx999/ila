@@ -103,6 +103,10 @@ public:
         return std::holds_alternative<T>(m_variant);
     }
 
+    auto match(auto&&... args) const {
+        return std::visit(overloaded_lambda { args... }, m_variant);
+    }
+
     value operator+(const value& other) const {
         return integer(get_as<integer>() + other.get_as<integer>());
     }
@@ -112,7 +116,7 @@ public:
     }
 
     [[nodiscard]] std::string format() const {
-        return std::visit(overloaded_lambda {
+        return match(
             [](const integer& integer) {
                 return std::format("int({})", integer.get());
             },
@@ -121,8 +125,8 @@ public:
             },
             [](const null&) {
                 return std::string("null");
-            },
-        }, m_variant);
+            }
+        );
     }
 
 private:
