@@ -17,7 +17,7 @@ void test_value() {
 
     try {
         auto unused = val_a.get_as<value::string>();
-    } catch (const value::type_error& e) {
+    } catch (const std::bad_variant_access& e) {
         was_caught = true;
     }
     assert(was_caught);

@@ -8,6 +8,7 @@
 
 #include "lexer.hpp"
 #include "utils.hpp"
+#include "variant.hpp"
 
 namespace value {
 
@@ -62,42 +63,13 @@ public:
 
 };
 
-template <typename Variant, typename T>
-struct variant_contains_type;
+using value_t = variant<integer, string, null>;
 
-template <typename... Vs, typename T>
-struct variant_contains_type<std::variant<Vs...>, T> {
-    static constexpr bool value = std::disjunction_v<std::is_same<T, Vs>...>;
-};
-
-template <typename Variant, typename T>
-inline constexpr bool variant_contains_type_v = variant_contains_type<Variant, T>::value;
-
-class value {
-    using variant_type = std::variant<integer, string, null>;
-
+class value : public value_t {
 public:
-    value(integer integer) : m_variant(integer) { }
-    value(string string)   : m_variant(string)  { }
-    value(null null)       : m_variant(null)    { }
-
-    template <typename T>
-    [[nodiscard]] T get_as() const {
-        static_assert(variant_contains_type_v<variant_type, T>, "value cannot be of the specified type");
-
-        if (!isa<T>()) throw type_error("value does not contain the specified type");
-        return std::get<T>(m_variant);
-    }
-
-    template <typename T>
-    [[nodiscard]] bool isa() const {
-        static_assert(variant_contains_type_v<variant_type, T>, "value cannot be of the specified type");
-        return std::holds_alternative<T>(m_variant);
-    }
-
-    auto match(auto&&... args) const {
-        return std::visit(overloaded_lambda { args... }, m_variant);
-    }
+    value(integer integer) : value_t(integer) { }
+    value(string string)   : value_t(string)  { }
+    value(null null)       : value_t(null)    { }
 
     value operator+(const value& other) const {
         return integer(get_as<integer>() + other.get_as<integer>());
@@ -120,9 +92,6 @@ public:
             }
         );
     }
-
-private:
-    variant_type m_variant;
 
 };
 
