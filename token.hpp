@@ -76,6 +76,10 @@ struct formatter {
         return "equals";
     }
 
+    std::string operator()(const log_and&) const {
+        return "log_and";
+    }
+
     std::string operator()(const fn&) const {
         return "fn";
     }

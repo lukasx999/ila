@@ -10,10 +10,15 @@
 #include <iostream>
 #include <vector>
 #include <format>
-#include <string_view>
-#include <array>
 
 #include "token.hpp"
+
+class lexer_error : public std::runtime_error {
+public:
+    explicit lexer_error(const char* msg)
+    : std::runtime_error(msg)
+    { }
+};
 
 class lexer {
 public:
@@ -79,11 +84,6 @@ private:
         return m_src[m_idx];
     }
 
-    [[nodiscard]] char get_next() const {
-        assert(m_idx + 1 < m_src.length());
-        return m_src[m_idx + 1];
-    }
-
     [[nodiscard]] static bool is_identifier(char c) {
         return std::isalpha(c) || c == '_';
     }
@@ -135,23 +135,23 @@ private:
 
     template <typename Token>
     bool lex_char_double(char c1, char c2) {
-        if (get_current() != c1 && get_next() != c2) return false;
+        if (get_current() != c1) return false;
+        if (m_idx + 1 >= m_src.length()) return false;
+        if (m_src.at(m_idx + 1) != c2) return false;
         m_tokens.push_back(Token());
         m_idx += 2;
         return true;
     }
 
     bool lex_string() {
+        // TODO: clean this up
         if (get_current() != '"') return false;
 
         size_t old_idx = m_idx;
         m_idx++;
         while (get_current() != '"') {
-            if (is_at_end()) {
-                std::println(std::cerr, "unterminated string literal");
-                std::exit(1);
-            }
             m_idx++;
+            if (is_at_end()) throw lexer_error("unterminated string literal");
         }
         m_idx++;
 
