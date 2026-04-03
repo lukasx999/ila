@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "ast.hpp"
 #include "value.hpp"
 
@@ -8,7 +10,14 @@ public:
     runtime() = default;
 
     value::value operator()(const ast::literal& literal) {
-        return value::from_token(literal.get_token());
+        auto token = literal.get_token();
+
+        if (std::holds_alternative<token::identifier>(token)) {
+            auto ident = std::get<token::identifier>(token).m_value;
+            return m_variables.at(ident);
+        };
+
+        return value::from_token(token);
     }
 
     value::value operator()(const ast::binary_op& binop) {
@@ -26,13 +35,11 @@ public:
 
     value::value operator()(const ast::var_decl& vardecl) {
         auto init = std::visit(*this, vardecl.get_init());
+        m_variables.insert({ vardecl.get_identifier(), init });
         return value::null();
     }
 
     value::value operator()(const ast::block& block) {
-        if (block.get_children().size() == 1)
-            return std::visit(*this, *block.get_children().front());
-
 
         for (auto& child : block.get_children()) {
             std::visit(*this, *child);
@@ -40,5 +47,8 @@ public:
 
         return value::null();
     }
+
+private:
+    std::unordered_map<std::string_view, value::value> m_variables;
 
 };

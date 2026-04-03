@@ -73,6 +73,10 @@ public:
         , m_init(std::move(init))
     { }
 
+    [[nodiscard]] std::string_view get_identifier() const {
+        return m_ident.m_value;
+    }
+
     [[nodiscard]] node& get_init() const {
         return *m_init;
     }
