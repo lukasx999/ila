@@ -9,6 +9,16 @@
 #include "utils.hpp"
 #include "ast.hpp"
 
+struct parse_error : std::runtime_error {
+    explicit parse_error(const char* msg)
+    : std::runtime_error(msg)
+    { }
+
+    explicit parse_error(std::string msg)
+    : std::runtime_error(std::move(msg))
+    { }
+};
+
 class parser {
 public:
     explicit parser(std::vector<token::token> tokens)
@@ -30,8 +40,8 @@ private:
 
         while (!is_at_end()) {
 
-            if (token_isa<token::let>()) {
-                children.push_back(parse_var_decl());
+            if (auto vardecl = parse_var_decl()) {
+                children.push_back(std::move(vardecl));
             } else {
                 children.push_back(parse_binop());
             }
@@ -55,7 +65,7 @@ private:
 
             if (is_at_end()) break;
 
-            bool should_stop = std::visit(overloaded_lambda {
+            bool should_stop = get_token().match(
                 [&](const token::plus&) {
                     type = ast::binary_op::type::plus;
                     return false;
@@ -68,8 +78,8 @@ private:
 
                 [](const auto&) {
                     return true;
-                },
-            }, get_token());
+                }
+            );
 
             if (should_stop) break;
 
@@ -88,11 +98,12 @@ private:
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_var_decl() {
-        token_must_be<token::let>();
+        if (!get_token().isa<token::let>()) return nullptr;
+
         next_token();
 
         token_must_be<token::identifier>();
-        auto ident = get_token_as<token::identifier>();
+        auto ident = get_token().get_as<token::identifier>();
         next_token();
 
         token_must_be<token::eq>();
@@ -103,19 +114,10 @@ private:
         return std::make_unique<ast::node>(ast::var_decl(ident, std::move(init)));
     }
 
-    template <typename Token>
-    [[nodiscard]] bool token_isa() const {
-        return std::holds_alternative<Token>(get_token());
-    }
-
-    template <typename Token>
+    template <class Token>
     void token_must_be() const {
-        assert(std::holds_alternative<Token>(get_token()));
-    }
-
-    template <typename Token>
-    [[nodiscard]] Token get_token_as() {
-        return std::get<Token>(get_token());
+        if (!get_token().isa<Token>())
+            throw parse_error(std::format("expected {}", token::type_to_string<Token>()));
     }
 
     [[nodiscard]] const token::token& get_token() const {

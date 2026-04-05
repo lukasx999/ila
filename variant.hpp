@@ -6,6 +6,8 @@
 
 template <typename... Ts>
 struct variant : std::variant<Ts...> {
+    using std::variant<Ts...>::variant;
+
     template <typename T>
     [[nodiscard]] T get_as() const {
         return std::get<T>(*this);

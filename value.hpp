@@ -63,7 +63,7 @@ public:
 
 };
 
-using value_variant_type = std::variant<integer, string, null>;
+using value_variant_type = variant<integer, string, null>;
 
 class value : public value_variant_type {
 public:
