@@ -31,7 +31,12 @@ struct log_and { };
 struct fn { };
 struct let { };
 
-using token = std::variant<integer, string, identifier, plus, minus, lbrace, rbrace, eq, log_and, fn, let>;
+using token_variant_type = std::variant<integer, string, identifier,
+                            plus, minus, lbrace, rbrace, eq, log_and, fn, let>;
+
+struct token : token_variant_type {
+    using token_variant_type::variant;
+};
 
 struct format_visitor {
     std::string operator()(const integer& token) const {

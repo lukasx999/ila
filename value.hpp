@@ -63,13 +63,11 @@ public:
 
 };
 
-using variant_type = std::variant<integer, string, null>;
+using value_variant_type = std::variant<integer, string, null>;
 
-class value : public variant_type {
+class value : public value_variant_type {
 public:
-    value(integer integer) : variant_type(integer) { }
-    value(string string)   : variant_type(string)  { }
-    value(null null)       : variant_type(null)    { }
+    using value_variant_type::variant;
 
     value operator+(const value& other) const {
         return integer(std::get<integer>(*this) + std::get<integer>(other));

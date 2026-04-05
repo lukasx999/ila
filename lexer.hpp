@@ -111,7 +111,7 @@ private:
                 m_tokens.push_back(token::let());
 
             } else {
-                m_tokens.push_back(token::identifier(std::string(value)));
+                m_tokens.push_back(token::identifier(value));
             }
 
             return true;

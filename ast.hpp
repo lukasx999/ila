@@ -102,7 +102,11 @@ private:
 
 };
 
-struct node : std::variant<literal, binary_op, var_decl, block> { };
+using node_variant_type = std::variant<literal, binary_op, var_decl, block>;
+
+struct node : node_variant_type {
+    using node_variant_type::variant;
+};
 
 struct node_formatter {
     void operator()(literal& lit) {

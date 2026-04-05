@@ -82,8 +82,7 @@ private:
     }
 
     [[nodiscard]] std::unique_ptr<ast::node> parse_literal() {
-        ast::literal lit(get_token());
-        auto node = std::make_unique<ast::node>(lit);
+        auto node = std::make_unique<ast::node>(ast::literal(get_token()));
         next_token();
         return node;
     }
@@ -101,8 +100,7 @@ private:
 
         auto init = parse_expression();
 
-        ast::var_decl vardecl(ident, std::move(init));
-        return std::make_unique<ast::node>(std::move(vardecl));
+        return std::make_unique<ast::node>(ast::var_decl(ident, std::move(init)));
     }
 
     template <typename Token>
