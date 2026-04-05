@@ -108,13 +108,13 @@ struct node : node_variant_type {
     using node_variant_type::variant;
 };
 
-struct node_formatter {
-    void operator()(literal& lit) {
+struct tree_print_visitor {
+    void operator()(const literal& lit) {
         print_spacing();
         std::println("lit: {}", token::to_string(lit.get_token()));
     }
 
-    void operator()(binary_op& binop) {
+    void operator()(const binary_op& binop) {
         print_spacing();
         std::println("binop");
 
@@ -127,14 +127,14 @@ struct node_formatter {
         std::visit(*this, binop.get_rhs());
     }
 
-    void operator()(var_decl& decl) {
+    void operator()(const var_decl& decl) {
         print_spacing();
         std::println("vardecl");
         m_spacing++;
         std::visit(*this, decl.get_init());
     }
 
-    void operator()(block& block) {
+    void operator()(const block& block) {
         print_spacing();
         std::println("block");
         m_spacing++;
@@ -153,5 +153,9 @@ private:
     }
 
 };
+
+inline void print_tree(const node& root) {
+    std::visit(tree_print_visitor{}, root);
+}
 
 } // namespace ast

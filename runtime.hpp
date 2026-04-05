@@ -5,19 +5,21 @@
 #include "ast.hpp"
 #include "value.hpp"
 
-class runtime {
+class runtime_visitor {
 public:
-    runtime() = default;
+    runtime_visitor() = default;
 
     value::value operator()(const ast::literal& literal) {
         auto token = literal.get_token();
 
-        if (std::holds_alternative<token::identifier>(token)) {
-            auto ident = std::get<token::identifier>(token).m_value;
+        try {
+            auto ident = token.get_as<token::identifier>().m_value;
             return m_variables.at(ident);
-        };
 
-        return value::from_token(token);
+        } catch (const std::bad_variant_access&) {
+            return value::from_token(token);
+        }
+
     }
 
     value::value operator()(const ast::binary_op& binop) {
@@ -50,5 +52,18 @@ public:
 
 private:
     std::unordered_map<std::string_view, value::value> m_variables;
+
+};
+
+class runtime {
+public:
+    runtime() = default;
+
+    value::value run_tree(const ast::node& root) {
+        return std::visit(m_visitor, root);
+    }
+
+private:
+    runtime_visitor m_visitor;
 
 };

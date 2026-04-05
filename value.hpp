@@ -70,15 +70,15 @@ public:
     using value_variant_type::variant;
 
     value operator+(const value& other) const {
-        return integer(std::get<integer>(*this) + std::get<integer>(other));
+        return integer(get_as<integer>() + other.get_as<integer>());
     }
 
     value operator-(const value& other) const {
-        return integer(std::get<integer>(*this) - std::get<integer>(other));
+        return integer(get_as<integer>() - other.get_as<integer>());
     }
 
-    [[nodiscard]] std::string format() const {
-        return std::visit(overloaded_lambda {
+    [[nodiscard]] std::string to_string() const {
+        return match(
             [](const integer& integer) {
                 return std::format("int({})", integer.get());
             },
@@ -88,7 +88,7 @@ public:
             [](const null&) {
                 return std::string("null");
             }
-        }, *this);
+        );
     }
 
 };

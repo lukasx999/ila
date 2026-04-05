@@ -1,10 +1,14 @@
 #include <print>
 #include <fstream>
+#include <algorithm>
+#include <ranges>
 
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "value.hpp"
 #include "runtime.hpp"
+
+namespace {
 
 void test_value() {
     value::integer a(4);
@@ -50,24 +54,62 @@ void test_lexer() {
     assert(tokens.at(3).isa<token::integer>());
 }
 
+void run_repl() {
+
+    runtime runtime;
+
+    while (true) {
+        std::string line;
+        std::print("> ");
+        if (!std::getline(std::cin, line)) {
+            std::println();
+            break;
+        }
+
+        auto tokens = lexer(line).tokenize();
+        for (auto& token : tokens) {
+            std::println("{}", token::to_string(token));
+        }
+
+        parser parser(std::move(tokens));
+        auto root = parser.parse();
+
+
+        assert(root->isa<ast::block>());
+        auto& block = root->get_as<ast::block>();
+        assert(block.get_children().size() == 1);
+        auto& expr = *block.get_children().front();
+
+        ast::print_tree(expr);
+
+        auto result = runtime.run_tree(expr);
+        std::println("{}", result.to_string());
+    }
+};
+
+} // namespace
+
 int main() {
 
     test_value();
     test_lexer();
 
+    run_repl();
+    return 0;
+
     auto tokens = lexer::from_file("main.ila").tokenize();
 
     for (auto& token : tokens) {
-        std::println("* {}", token::to_string(token));
+        std::println("{}", token::to_string(token));
     }
 
     parser parser(std::move(tokens));
     auto root = parser.parse();
 
-    std::visit(ast::node_formatter(), *root);
+    std::visit(ast::tree_print_visitor(), *root);
 
-    runtime runtime;
+    runtime_visitor runtime;
     auto result = std::visit(runtime, *root);
-    std::println("value: {}", std::get<value::integer>(result).get());
+    std::println("{}", result.to_string());
 
 }

@@ -9,7 +9,12 @@ struct variant : std::variant<Ts...> {
     using std::variant<Ts...>::variant;
 
     template <typename T>
-    [[nodiscard]] T get_as() const {
+    [[nodiscard]] const T& get_as() const {
+        return std::get<T>(*this);
+    }
+
+    template <typename T>
+    [[nodiscard]] T& get_as() {
         return std::get<T>(*this);
     }
 

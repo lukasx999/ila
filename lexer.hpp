@@ -155,7 +155,7 @@ private:
         }
         m_idx++;
 
-        auto value = m_src.substr(old_idx, m_idx);
+        auto value = m_src.substr(old_idx + 1, m_idx - 2);
         m_tokens.push_back(token::string(std::string(value)));
         return true;
     }
