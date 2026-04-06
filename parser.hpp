@@ -42,9 +42,14 @@ private:
 
             if (auto vardecl = parse_var_decl()) {
                 children.push_back(std::move(vardecl));
+
+            } else if (auto function = parse_function()) {
+                children.push_back(std::move(function));
+
             } else {
                 children.push_back(parse_expression());
             }
+
         }
 
         ast::block block(std::move(children));
@@ -93,6 +98,29 @@ private:
         auto node = std::make_unique<ast::node>(ast::literal(get_token()));
         next_token();
         return node;
+    }
+
+    std::unique_ptr<ast::node> parse_function() {
+        if (!get_token().isa<token::fn>())
+            return nullptr;
+        next_token();
+
+        token_must_be<token::identifier>();
+        auto ident = get_token().get_as<token::identifier>();
+        next_token();
+
+        token_must_be<token::lparen>();
+        next_token();
+
+        token_must_be<token::rparen>();
+        next_token();
+
+        token_must_be<token::lparen>();
+        next_token();
+
+        token_must_be<token::rparen>();
+        next_token();
+
     }
 
     std::unique_ptr<ast::node> parse_call() {

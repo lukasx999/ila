@@ -133,7 +133,7 @@ int main() {
     test_value();
     test_lexer();
 
-    bool repl = true;
+    bool repl = false;
 
     if (repl) {
         run_repl();

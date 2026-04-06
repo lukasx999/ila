@@ -102,6 +102,27 @@ private:
 
 };
 
+class function {
+public:
+    function(token::token identifier, std::unique_ptr<node> body)
+        : m_identifier(identifier)
+        , m_body(std::move(body))
+    { }
+
+    [[nodiscard]] node& get_body() {
+        return *m_body;
+    }
+
+    [[nodiscard]] const node& get_body() const {
+        return *m_body;
+    }
+
+private:
+    token::token m_identifier;
+    std::unique_ptr<node> m_body;
+
+};
+
 class call {
 public:
     call(std::unique_ptr<node> callee, std::vector<std::unique_ptr<node>> arguments)
