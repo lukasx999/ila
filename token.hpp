@@ -26,13 +26,18 @@ struct plus { };
 struct minus { };
 struct lbrace { };
 struct rbrace { };
+struct lparen { };
+struct rparen { };
 struct eq { };
+struct comma { };
 struct log_and { };
 struct fn { };
 struct let { };
+struct terminator { };
 
 using token_variant_type = variant<integer, string, identifier,
-                            plus, minus, lbrace, rbrace, eq, log_and, fn, let>;
+                plus, minus, lbrace, rbrace, lparen, rparen, eq, comma, log_and,
+                fn, let, terminator>;
 
 struct token : token_variant_type {
     using token_variant_type::variant;
@@ -67,8 +72,20 @@ struct format_visitor {
         return "rbrace";
     }
 
+    std::string operator()(const lparen&) const {
+        return "lparen";
+    }
+
+    std::string operator()(const rparen&) const {
+        return "rparen";
+    }
+
     std::string operator()(const eq&) const {
         return "equals";
+    }
+
+    std::string operator()(const comma&) const {
+        return "comma";
     }
 
     std::string operator()(const log_and&) const {
@@ -81,6 +98,10 @@ struct format_visitor {
 
     std::string operator()(const let&) const {
         return "let";
+    }
+
+    std::string operator()(const terminator&) const {
+        return "end";
     }
 };
 
@@ -97,10 +118,14 @@ template <class Token>
     else if constexpr (std::is_same_v<Token, minus>) return "minus";
     else if constexpr (std::is_same_v<Token, lbrace>) return "lbrace";
     else if constexpr (std::is_same_v<Token, rbrace>) return "rbrace";
+    else if constexpr (std::is_same_v<Token, lparen>) return "lparen";
+    else if constexpr (std::is_same_v<Token, rparen>) return "rparen";
     else if constexpr (std::is_same_v<Token, eq>) return "eq";
+    else if constexpr (std::is_same_v<Token, comma>) return "comma";
     else if constexpr (std::is_same_v<Token, log_and>) return "log_and";
     else if constexpr (std::is_same_v<Token, fn>) return "fn";
     else if constexpr (std::is_same_v<Token, let>) return "let";
+    else static_assert(false, "missing case");
 }
 
 } // namespace token

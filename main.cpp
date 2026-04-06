@@ -45,13 +45,41 @@ void test_value() {
 }
 
 void test_lexer() {
-    lexer lexer("let x = 1");
-    auto tokens = lexer.tokenize();
-    assert(tokens.size() == 4);
-    assert(tokens.at(0).isa<token::let>());
-    assert(tokens.at(1).isa<token::identifier>());
-    assert(tokens.at(2).isa<token::eq>());
-    assert(tokens.at(3).isa<token::integer>());
+    {
+        auto tokens = lexer("1+2").tokenize();
+        assert(tokens.size() == 4);
+        assert(tokens.at(0).isa<token::integer>());
+        assert(tokens.at(0).get_as<token::integer>().m_value == 1);
+        assert(tokens.at(1).isa<token::plus>());
+        assert(tokens.at(2).isa<token::integer>());
+        assert(tokens.at(2).get_as<token::integer>().m_value == 2);
+        assert(tokens.at(3).isa<token::terminator>());
+    }
+
+    {
+        auto tokens = lexer("let x = 1").tokenize();
+        assert(tokens.size() == 5);
+        assert(tokens.at(0).isa<token::let>());
+        assert(tokens.at(1).isa<token::identifier>());
+        assert(tokens.at(2).isa<token::eq>());
+        assert(tokens.at(3).isa<token::integer>());
+        assert(tokens.at(4).isa<token::terminator>());
+    }
+
+    {
+        auto tokens = lexer("\"foo\"").tokenize();
+        assert(tokens.size() == 2);
+        assert(tokens.at(0).isa<token::string>());
+        assert(tokens.at(0).get_as<token::string>().m_value == "foo");
+        assert(tokens.at(1).isa<token::terminator>());
+    }
+}
+
+void print_tokens(std::span<token::token> tokens) {
+    for (auto& token : tokens | std::views::take(tokens.size() - 1)) {
+        std::print("{}, ", token::to_string(token));
+    }
+    std::println("{}", token::to_string(tokens.back()));
 }
 
 void run_repl() {
@@ -67,13 +95,10 @@ void run_repl() {
         }
 
         auto tokens = lexer(line).tokenize();
-        for (auto& token : tokens) {
-            std::println("{}", token::to_string(token));
-        }
+        print_tokens(tokens);
 
         parser parser(std::move(tokens));
         auto root = parser.parse();
-
 
         assert(root->isa<ast::block>());
         auto& block = root->get_as<ast::block>();
@@ -87,6 +112,20 @@ void run_repl() {
     }
 };
 
+void run_script(const std::filesystem::path& filename) {
+    auto tokens = lexer::from_file(filename).tokenize();
+    print_tokens(tokens);
+
+    parser parser(std::move(tokens));
+    auto root = parser.parse();
+
+    ast::print_tree(*root);
+
+    runtime runtime;
+    auto result = runtime.run_tree(*root);
+    std::println("{}", result.to_string());
+}
+
 } // namespace
 
 int main() {
@@ -94,22 +133,12 @@ int main() {
     test_value();
     test_lexer();
 
-    run_repl();
-    return 0;
+    bool repl = true;
 
-    auto tokens = lexer::from_file("main.ila").tokenize();
-
-    for (auto& token : tokens) {
-        std::println("{}", token::to_string(token));
+    if (repl) {
+        run_repl();
+    } else {
+        run_script("main.ila");
     }
-
-    parser parser(std::move(tokens));
-    auto root = parser.parse();
-
-    std::visit(ast::tree_print_visitor(), *root);
-
-    runtime_visitor runtime;
-    auto result = std::visit(runtime, *root);
-    std::println("{}", result.to_string());
 
 }

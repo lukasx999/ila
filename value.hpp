@@ -80,10 +80,10 @@ public:
     [[nodiscard]] std::string to_string() const {
         return match(
             [](const integer& integer) {
-                return std::format("int({})", integer.get());
+                return std::format("{}", integer.get());
             },
             [](const string& string) {
-                return std::format("string(\"{}\")", string.get());
+                return std::format("{}", string.get());
             },
             [](const null&) {
                 return std::string("null");

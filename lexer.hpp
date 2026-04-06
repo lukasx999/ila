@@ -47,7 +47,10 @@ public:
             std::bind(&lexer::lex_char<token::minus>, _1, '-'),
             std::bind(&lexer::lex_char<token::lbrace>, _1, '{'),
             std::bind(&lexer::lex_char<token::rbrace>, _1, '}'),
+            std::bind(&lexer::lex_char<token::lparen>, _1, '('),
+            std::bind(&lexer::lex_char<token::rparen>, _1, ')'),
             std::bind(&lexer::lex_char<token::eq>, _1, '='),
+            std::bind(&lexer::lex_char<token::comma>, _1, ','),
             &lexer::lex_string,
             &lexer::lex_integer,
             &lexer::lex_identifier,
@@ -66,6 +69,8 @@ public:
             }
 
         }
+
+        m_tokens.push_back(token::terminator());
 
         m_idx = 0;
         auto tokens = m_tokens;

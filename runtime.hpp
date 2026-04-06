@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <ranges>
 
 #include "ast.hpp"
 #include "value.hpp"
@@ -33,11 +34,44 @@ public:
             case plus:  return lhs + rhs;
             case minus: return lhs - rhs;
         }
+
+        assert(!"unreachable");
+    }
+
+    value::value operator()(const ast::call& call) {
+
+        auto& callee = call.get_callee();
+
+        auto args = call.get_arguments() | std::views::transform([&](const std::unique_ptr<ast::node>& arg) {
+            return std::visit(*this, *arg);
+        });
+
+        if (callee.isa<ast::literal>()) {
+
+            auto token = callee.get_as<ast::literal>().get_token();
+
+            if (token.isa<token::identifier>()) {
+                auto& name = token.get_as<token::identifier>().m_value;
+
+                if (name == "print") {
+
+                    for (auto&& arg : args) {
+                        std::print("{}", arg.to_string());
+                    }
+                    std::println();
+
+                }
+            }
+        }
+
+        auto callee_expr = std::visit(*this, call.get_callee());
+
+        return value::null();
     }
 
     value::value operator()(const ast::var_decl& vardecl) {
         auto init = std::visit(*this, vardecl.get_init());
-        m_variables.insert({ vardecl.get_identifier(), init });
+        m_variables.insert({ std::string(vardecl.get_identifier()), init });
         return value::null();
     }
 
@@ -51,7 +85,7 @@ public:
     }
 
 private:
-    std::unordered_map<std::string_view, value::value> m_variables;
+    std::unordered_map<std::string, value::value> m_variables;
 
 };
 

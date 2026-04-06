@@ -35,7 +35,7 @@ private:
     const std::vector<token::token> m_tokens;
     size_t m_idx = 0;
 
-    [[nodiscard]] std::unique_ptr<ast::node> parse_script() {
+    std::unique_ptr<ast::node> parse_script() {
         std::vector<std::unique_ptr<ast::node>> children;
 
         while (!is_at_end()) {
@@ -43,7 +43,7 @@ private:
             if (auto vardecl = parse_var_decl()) {
                 children.push_back(std::move(vardecl));
             } else {
-                children.push_back(parse_binop());
+                children.push_back(parse_expression());
             }
         }
 
@@ -51,19 +51,17 @@ private:
         return std::make_unique<ast::node>(std::move(block));
     }
 
-    [[nodiscard]] std::unique_ptr<ast::node> parse_expression() {
-        return parse_binop();
+    std::unique_ptr<ast::node> parse_expression() {
+        return parse_call();
     }
 
-    [[nodiscard]] std::unique_ptr<ast::node> parse_binop() {
+    std::unique_ptr<ast::node> parse_binop() {
 
         std::unique_ptr<ast::node> node = parse_literal();
 
         while (true) {
 
             ast::binary_op::type type;
-
-            if (is_at_end()) break;
 
             bool should_stop = get_token().match(
                 [&](const token::plus&) {
@@ -91,13 +89,36 @@ private:
         return node;
     }
 
-    [[nodiscard]] std::unique_ptr<ast::node> parse_literal() {
+    std::unique_ptr<ast::node> parse_literal() {
         auto node = std::make_unique<ast::node>(ast::literal(get_token()));
         next_token();
         return node;
     }
 
-    [[nodiscard]] std::unique_ptr<ast::node> parse_var_decl() {
+    std::unique_ptr<ast::node> parse_call() {
+        auto expr = parse_binop();
+
+        if (get_token().isa<token::lparen>()) {
+            next_token();
+
+            std::vector<std::unique_ptr<ast::node>> args;
+
+            while (!get_token().isa<token::rparen>()) {
+                args.push_back(parse_expression());
+
+                if (get_token().isa<token::comma>())
+                    next_token();
+            }
+
+            next_token();
+            ast::call call(std::move(expr), std::move(args));
+            return std::make_unique<ast::node>(std::move(call));
+        }
+
+        return expr;
+    }
+
+    std::unique_ptr<ast::node> parse_var_decl() {
         if (!get_token().isa<token::let>()) return nullptr;
 
         next_token();
@@ -125,7 +146,7 @@ private:
     }
 
     [[nodiscard]] bool is_at_end() const {
-        return m_idx >= m_tokens.size();
+        return get_token().isa<token::terminator>();
     }
 
     void next_token() {

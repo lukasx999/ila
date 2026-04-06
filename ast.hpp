@@ -102,7 +102,32 @@ private:
 
 };
 
-using node_variant_type = variant<literal, binary_op, var_decl, block>;
+class call {
+public:
+    call(std::unique_ptr<node> callee, std::vector<std::unique_ptr<node>> arguments)
+        : m_callee(std::move(callee))
+        , m_arguments(std::move(arguments))
+    { }
+
+    [[nodiscard]] node& get_callee() {
+        return *m_callee;
+    }
+
+    [[nodiscard]] const node& get_callee() const {
+        return *m_callee;
+    }
+
+    [[nodiscard]] auto get_arguments() const -> const std::vector<std::unique_ptr<node>>& {
+        return m_arguments;
+    }
+
+private:
+    std::unique_ptr<node> m_callee;
+    std::vector<std::unique_ptr<node>> m_arguments;
+
+};
+
+using node_variant_type = variant<literal, binary_op, call, var_decl, block>;
 
 struct node : node_variant_type {
     using node_variant_type::variant;
@@ -139,6 +164,15 @@ struct tree_print_visitor {
         std::println("block");
         m_spacing++;
         for (auto& child : block.get_children()) {
+            std::visit(*this, *child);
+        }
+    }
+
+    void operator()(const call& call) {
+        print_spacing();
+        std::println("call");
+        m_spacing++;
+        for (auto& child : call.get_arguments()) {
             std::visit(*this, *child);
         }
     }
