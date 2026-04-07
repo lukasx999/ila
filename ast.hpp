@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <variant>
+#include <ranges>
 #include <vector>
 #include <print>
 
@@ -93,7 +94,7 @@ public:
     : m_children(std::move(children))
     { }
 
-    [[nodiscard]] auto get_children() const -> const std::vector<std::unique_ptr<node>>& {
+    [[nodiscard]] auto get_children() const -> std::span<const std::unique_ptr<node>> {
         return m_children;
     }
 
@@ -103,11 +104,20 @@ private:
 };
 
 class function {
-public:
-    function(token::token identifier, std::unique_ptr<node> body)
-        : m_identifier(identifier)
-        , m_body(std::move(body))
+    public:
+    function(token::identifier identifier, std::vector<token::identifier> parameters, std::unique_ptr<node> body)
+    : m_identifier(identifier)
+    , m_parameters(std::move(parameters))
+    , m_body(std::move(body))
     { }
+
+    [[nodiscard]] const token::identifier& get_identifier() const {
+        return m_identifier;
+    }
+
+    [[nodiscard]] auto get_parameters() const -> std::span<const token::identifier> {
+        return m_parameters;
+    }
 
     [[nodiscard]] node& get_body() {
         return *m_body;
@@ -117,8 +127,9 @@ public:
         return *m_body;
     }
 
-private:
-    token::token m_identifier;
+    private:
+    token::identifier m_identifier;
+    std::vector<token::identifier> m_parameters;
     std::unique_ptr<node> m_body;
 
 };
@@ -148,7 +159,7 @@ private:
 
 };
 
-using node_variant_type = variant<literal, binary_op, call, var_decl, block>;
+using node_variant_type = variant<literal, binary_op, call, var_decl, function, block>;
 
 struct node : node_variant_type {
     using node_variant_type::variant;
@@ -196,6 +207,22 @@ struct tree_print_visitor {
         for (auto& child : call.get_arguments()) {
             std::visit(*this, *child);
         }
+    }
+
+    void operator()(const function& function) {
+        print_spacing();
+        auto ident = function.get_identifier().m_value;
+        std::print("function {}(", ident);
+
+        auto params = function.get_parameters();
+        for (auto& param : params | std::views::take(params.size() - 1)) {
+            std::print("{}, ", param.m_value);
+        }
+        std::print("{}", params.back().m_value);
+        std::println(")");
+
+        m_spacing++;
+        std::visit(*this, function.get_body());
     }
 
 private:

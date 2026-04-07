@@ -84,6 +84,10 @@ public:
         return value::null();
     }
 
+    value::value operator()(const ast::function& function) {
+        return value::null();
+    }
+
 private:
     std::unordered_map<std::string, value::value> m_variables;
 

@@ -39,21 +39,28 @@ private:
         std::vector<std::unique_ptr<ast::node>> children;
 
         while (!is_at_end()) {
-
-            if (auto vardecl = parse_var_decl()) {
-                children.push_back(std::move(vardecl));
-
-            } else if (auto function = parse_function()) {
-                children.push_back(std::move(function));
-
-            } else {
-                children.push_back(parse_expression());
-            }
-
+            children.push_back(parse_statement());
         }
 
         ast::block block(std::move(children));
         return std::make_unique<ast::node>(std::move(block));
+    }
+
+    std::unique_ptr<ast::node> parse_statement() {
+
+        if (auto vardecl = parse_var_decl()) {
+            return vardecl;
+
+        } else if (auto function = parse_function()) {
+            return function;
+
+        } else if (auto block = parse_block()) {
+            return block;
+
+        } else {
+            return parse_expression();
+        }
+
     }
 
     std::unique_ptr<ast::node> parse_expression() {
@@ -112,15 +119,37 @@ private:
         token_must_be<token::lparen>();
         next_token();
 
-        token_must_be<token::rparen>();
+        std::vector<token::identifier> params;
+
+        while (!get_token().isa<token::rparen>()) {
+            auto param = get_token().get_as<token::identifier>();
+            params.push_back(param);
+
+            if (get_token().isa<token::comma>())
+                next_token();
+        }
+
         next_token();
 
-        token_must_be<token::lparen>();
+        auto body = parse_block();
+
+        ast::function function(ident, std::move(params), std::move(body));
+        return std::make_unique<ast::node>(std::move(function));
+    }
+
+    std::unique_ptr<ast::node> parse_block() {
+        if (!get_token().isa<token::lbrace>())
+            return nullptr;
         next_token();
 
-        token_must_be<token::rparen>();
+        std::vector<std::unique_ptr<ast::node>> children;
+        while (!get_token().isa<token::rbrace>()) {
+            children.push_back(parse_statement());
+        }
         next_token();
 
+        ast::block block(std::move(children));
+        return std::make_unique<ast::node>(std::move(block));
     }
 
     std::unique_ptr<ast::node> parse_call() {
