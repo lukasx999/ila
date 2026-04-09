@@ -1,10 +1,18 @@
 #pragma once
 
+#include <stdexcept>
 #include <unordered_map>
+#include <stack>
 #include <ranges>
 
 #include "ast.hpp"
 #include "value.hpp"
+
+struct value_error : std::runtime_error {
+    explicit value_error(const char* msg)
+    : std::runtime_error(msg)
+    { }
+};
 
 class runtime_visitor {
 public:
@@ -15,7 +23,11 @@ public:
 
         try {
             auto ident = token.get_as<token::identifier>().m_value;
-            return m_variables.at(ident);
+            try {
+                return m_variables.top().at(ident);
+            } catch (const std::out_of_range&) {
+                throw value_error("variable doesnt exist");
+            }
 
         } catch (const std::bad_variant_access&) {
             return value::from_token(token);
@@ -77,15 +89,17 @@ public:
 
     value::value operator()(const ast::var_decl& vardecl) {
         auto init = std::visit(*this, vardecl.get_init());
-        m_variables.insert({ std::string(vardecl.get_identifier()), init });
+        m_variables.top().insert({ std::string(vardecl.get_identifier()), init });
         return value::null();
     }
 
     value::value operator()(const ast::block& block) {
+        m_variables.push({});
 
         for (auto& child : block.get_children()) {
             std::visit(*this, *child);
         }
+        m_variables.pop();
 
         return value::null();
     }
@@ -93,12 +107,12 @@ public:
     value::value operator()(const ast::function& function) {
         auto ident = function.get_identifier().m_value;
         value::function fn(function.get_body().get_as<ast::block>());
-        m_variables.insert({ std::move(ident), fn });
+        m_variables.top().insert({ std::move(ident), fn });
         return value::null();
     }
 
 private:
-    std::unordered_map<std::string, value::value> m_variables;
+    std::stack<std::unordered_map<std::string, value::value>> m_variables;
 
 };
 

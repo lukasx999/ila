@@ -3,4 +3,5 @@ fn f() {
     print(x)
 }
 
+x
 f()
