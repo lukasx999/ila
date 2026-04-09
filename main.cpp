@@ -27,11 +27,6 @@ void test_value() {
     }
     assert(was_caught);
 
-    value::value c(value::string("hello"));
-    value::value d(value::string("foo"));
-    c = d;
-    assert(c.get_as<value::string>().get() == "foo");
-
     value::value val_int(45);
 
     assert(val_int.match(

@@ -152,16 +152,17 @@ private:
         // TODO: clean this up
         if (get_current() != '"') return false;
 
-        size_t old_idx = m_idx;
         m_idx++;
+        if (is_at_end()) throw lexer_error("unterminated string literal");
+        size_t old_idx = m_idx;
         while (get_current() != '"') {
             m_idx++;
             if (is_at_end()) throw lexer_error("unterminated string literal");
         }
-        m_idx++;
 
-        auto value = m_src.substr(old_idx + 1, m_idx - 2);
+        auto value = m_src.substr(old_idx, m_idx - old_idx);
         m_tokens.push_back(token::string(std::string(value)));
+        m_idx++;
         return true;
     }
 

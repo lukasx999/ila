@@ -124,6 +124,7 @@ private:
         while (!get_token().isa<token::rparen>()) {
             auto param = get_token().get_as<token::identifier>();
             params.push_back(param);
+            next_token();
 
             if (get_token().isa<token::comma>())
                 next_token();

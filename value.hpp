@@ -8,6 +8,7 @@
 
 #include "lexer.hpp"
 #include "utils.hpp"
+#include "ast.hpp"
 #include "variant.hpp"
 
 namespace value {
@@ -55,6 +56,21 @@ private:
 
 };
 
+class function {
+    public:
+    function(const ast::block& node)
+    : m_node(node)
+    { }
+
+    [[nodiscard]] const ast::block& get_node() const {
+        return m_node;
+    }
+
+    private:
+    const ast::block& m_node;
+
+};
+
 class type_error : public std::runtime_error {
 public:
     explicit type_error(const char* msg)
@@ -63,10 +79,10 @@ public:
 
 };
 
-using value_variant_type = variant<integer, string, null>;
+using value_variant_type = variant<integer, string, function, null>;
 
 class value : public value_variant_type {
-public:
+    public:
     using value_variant_type::variant;
 
     value operator+(const value& other) const {
@@ -78,6 +94,8 @@ public:
     }
 
     [[nodiscard]] std::string to_string() const {
+        using namespace std::string_literals;
+
         return match(
             [](const integer& integer) {
                 return std::format("{}", integer.get());
@@ -85,8 +103,11 @@ public:
             [](const string& string) {
                 return std::format("{}", string.get());
             },
+            [](const function&) {
+                return "function"s;
+            },
             [](const null&) {
-                return std::string("null");
+                return "null"s;
             }
         );
     }

@@ -59,12 +59,18 @@ public:
                         std::print("{}", arg.to_string());
                     }
                     std::println();
+                    return value::null();
 
                 }
             }
         }
 
-        auto callee_expr = std::visit(*this, call.get_callee());
+        auto fn = std::visit(*this, call.get_callee());
+        if (!fn.isa<value::function>())
+            throw value::type_error("callee is not a function");
+
+        auto& fn_node = fn.get_as<value::function>().get_node();
+        (*this)(fn_node);
 
         return value::null();
     }
@@ -85,6 +91,9 @@ public:
     }
 
     value::value operator()(const ast::function& function) {
+        auto ident = function.get_identifier().m_value;
+        value::function fn(function.get_body().get_as<ast::block>());
+        m_variables.insert({ std::move(ident), fn });
         return value::null();
     }
 

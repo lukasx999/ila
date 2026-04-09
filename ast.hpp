@@ -215,10 +215,13 @@ struct tree_print_visitor {
         std::print("function {}(", ident);
 
         auto params = function.get_parameters();
-        for (auto& param : params | std::views::take(params.size() - 1)) {
-            std::print("{}, ", param.m_value);
+        if (!params.empty()) {
+
+            for (auto& param : params | std::views::take(params.size() - 1)) {
+                std::print("{}, ", param.m_value);
+            }
+            std::print("{}", params.back().m_value);
         }
-        std::print("{}", params.back().m_value);
         std::println(")");
 
         m_spacing++;
